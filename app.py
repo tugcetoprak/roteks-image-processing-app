@@ -177,111 +177,115 @@ if (ref_files and len(ref_files) == 4) and (test_files and len(test_files) == 4)
             c.image(im, caption=f"Test{i}", use_container_width=True)
 
     if st.button("Analizi Çalıştır"):
-        # Ref görüntülerini numpy olarak al
-        ref_np = [np.array(im) for im in ref_imgs]
-        # Test görüntülerini numpy olarak al
-        tst_np = [np.array(im) for im in test_imgs]
+    ref_np = [np.array(im) for im in ref_imgs]
+    tst_np = [np.array(im) for im in test_imgs]
 
-        # --- KIRILMA (Test #1 vs Ref1) ---
-        st.markdown("### ⭐ Kırılma Kontrolü (Test1 ↔ Ref1)")
-        # Resimleri ref1 boyutuna resize
-        defimg = cv2.resize(tst_np[0], (ref_np[0].shape[1], ref_np[0].shape[0]))
-        eroded_def = preprocess_pipeline(defimg)
+    # --- KIRILMA (Test #1 ↔ Ref1) ---
+    st.markdown("### ⭐ Kırılma Kontrolü (Test1 ↔ Ref1)")
+    defimg = cv2.resize(tst_np[0], (ref_np[0].shape[1], ref_np[0].shape[0]))
+    eroded_def = preprocess_pipeline(defimg)
 
-        refimg = ref_np[0]
-        eroded_ref = preprocess_pipeline(refimg)
+    refimg = ref_np[0]
+    eroded_ref = preprocess_pipeline(refimg)
 
-        vdef_h = longest_nonempty_height(eroded_def)
-        vref_h = longest_nonempty_height(eroded_ref)
+    vdef_h = longest_nonempty_height(eroded_def)
+    vref_h = longest_nonempty_height(eroded_ref)
 
-        st.write(f"Referans iğnenin boyu (piksel satır): {vref_h}")
-        st.write(f"Test iğnesinin boyu (piksel satır): {vdef_h}")
+    st.write(f"Referans iğnenin boyu (piksel satır): {vref_h}")
+    st.write(f"Test iğnesinin boyu (piksel satır): {vdef_h}")
 
-        if vref_h > 0:
-            defperc = abs((vdef_h - vref_h) / vref_h) * 100.0
-        else:
-            defperc = 0.0
-        st.write(f"Deformasyon oranı (yüzde): {defperc:.3f}")
+    defperc = abs((vdef_h - vref_h) / vref_h) * 100.0 if vref_h > 0 else 0.0
+    st.write(f"Deformasyon oranı (yüzde): {defperc:.3f}")
 
-        broken = int(defperc > 35.0)  # eşik
-        if broken:
-            st.success("Test iğnesinin **kırık** olduğu tespit edilmiştir.")
-        else:
-            st.info("Test iğnesinin **kırık olmadığı** tespit edilmiştir. Eğilme ve aşınma kontrolüne geçiliyor.")
-
-        # --- EĞİLME (Test #3 ↔ Ref2) ---
-        st.markdown("---")
-        st.markdown("### ⭐ Eğilme Kontrolü (Test3 ↔ Ref2)")
-        defimg = cv2.resize(tst_np[2], (ref_np[1].shape[1], ref_np[1].shape[0]))
-        eroded_def = preprocess_pipeline(defimg)
-
-        refimg = ref_np[1]
-        eroded_ref = preprocess_pipeline(refimg)
-
-        refslope = slope_percent(eroded_ref)
-        defslope = slope_percent(eroded_def)
-
-        st.write(f"Referans iğnenin olası eğikliği: {refslope:.3f}")
-        st.write(f"Test iğnesinin eğikliği: {defslope:.3f}")
-
-        bent = int(defslope > 5.0)  # eşik
-        if bent:
-            st.success("Test iğnesinde **eğiklik** tespit edilmiştir.")
-        else:
-            st.info("Test iğnesinde **eğiklik tespit edilmemiştir**. Aşınma kontrolüne geçiliyor.")
-
-        # --- AŞINMA (Test #2 ↔ Ref1) ---
-        st.markdown("---")
-        st.markdown("### ⭐ Aşınma Kontrolü (Test2 ↔ Ref1)")
-        defimg = cv2.resize(tst_np[1], (ref_np[0].shape[1], ref_np[0].shape[0]))
-        eroded_def = preprocess_pipeline(defimg)
-
-        refimg = ref_np[0]
-        eroded_ref = preprocess_pipeline(refimg)
-
-        # grafikleri çıkar: her satırdaki 1 sayısı
-        def row_ones_count(binary: np.ndarray) -> np.ndarray:
-            return np.sum(binary > 0, axis=1).astype(np.float32)
-
-        graph_ref = row_ones_count(eroded_ref)
-        graph_def = row_ones_count(eroded_def)
-
-        # sıfırları at
-        graph_ref = graph_ref[graph_ref > 0]
-        graph_def = graph_def[graph_def > 0]
-
-        # smooth (moving)
-        graph_ref_s = smooth_moving(graph_ref, span=5)
-        graph_def_s = smooth_moving(graph_def, span=5)
-
-        # ilk 10 farkların ortalaması (veri kısa ise elde olan kadarını al)
-        n = min(10, len(graph_ref_s) - 1, len(graph_def_s) - 1)
-        if n <= 1:
-            finalcal = 0.0
-        else:
-            dref = np.diff(graph_ref_s[: n + 1])
-            ddef = np.diff(graph_def_s[: n + 1])
-            # ortalamalar (0 bölünme koruması)
-            mref = float(np.mean(dref)) if np.any(np.isfinite(dref)) else 1e-6
-            mdef = float(np.mean(ddef)) if np.any(np.isfinite(ddef)) else 0.0
-            if abs(mref) < 1e-6:
-                mref = 1e-6
-            finalcal = mdef / mref
-
-        st.write(f"Aşınma miktarı (yüzde değişim oranı benzeri): {finalcal:.3f}")
-
-        worn = int(finalcal > 1.5)
-        if worn:
-            st.success("Test iğnesinin **aşınma miktarı yüksek** bulunmuştur.")
-        else:
-            st.info("Test iğnesinin **aşınma miktarı yüksek değildir**.")
-
-        # Özet tablo
+    broken = defperc > 35.0
+    if broken:
+        st.success("Test iğnesinin **kırık** olduğu tespit edilmiştir.")
+        # ÖZET ve erken çıkış
         st.markdown("---")
         st.subheader("Özet")
-        st.write(f"Kırılma: {'Pozitif' if broken else 'Negatif'}")
-        st.write(f"Eğilme:  {'Pozitif' if bent else 'Negatif'}")
-        st.write(f"Aşınma:  {'Pozitif' if worn else 'Negatif'}")
+        st.write("Kırılma: **Pozitif**")
+        st.write("Eğilme:  **Atlandı**")
+        st.write("Aşınma:  **Atlandı**")
+        st.stop()   # Eğilme ve Aşınma hesaplarını atla
+
+    st.info("Kırılma **negatif**. Eğilme kontrolüne geçiliyor.")
+
+    # --- EĞİLME (Test #3 ↔ Ref2) ---
+    st.markdown("---")
+    st.markdown("### ⭐ Eğilme Kontrolü (Test3 ↔ Ref2)")
+    defimg = cv2.resize(tst_np[2], (ref_np[1].shape[1], ref_np[1].shape[0]))
+    eroded_def = preprocess_pipeline(defimg)
+
+    refimg = ref_np[1]
+    eroded_ref = preprocess_pipeline(refimg)
+
+    refslope = slope_percent(eroded_ref)
+    defslope = slope_percent(eroded_def)
+
+    st.write(f"Referans iğnenin olası eğikliği: {refslope:.3f}")
+    st.write(f"Test iğnesinin eğikliği: {defslope:.3f}")
+
+    bent = defslope > 5.0
+    if bent:
+        st.success("Test iğnesinde **eğiklik** tespit edilmiştir.")
+        # ÖZET ve erken çıkış
+        st.markdown("---")
+        st.subheader("Özet")
+        st.write("Kırılma: **Negatif**")
+        st.write("Eğilme:  **Pozitif**")
+        st.write("Aşınma:  **Atlandı**")
+        st.stop()   # Aşınma hesabını atla
+
+    st.info("Eğilme **negatif**. Aşınma kontrolüne geçiliyor.")
+
+    # --- AŞINMA (Test #2 ↔ Ref1) ---
+    st.markdown("---")
+    st.markdown("### ⭐ Aşınma Kontrolü (Test2 ↔ Ref1)")
+    defimg = cv2.resize(tst_np[1], (ref_np[0].shape[1], ref_np[0].shape[0]))
+    eroded_def = preprocess_pipeline(defimg)
+
+    refimg = ref_np[0]
+    eroded_ref = preprocess_pipeline(refimg)
+
+    def row_ones_count(binary: np.ndarray) -> np.ndarray:
+        return np.sum(binary > 0, axis=1).astype(np.float32)
+
+    graph_ref = row_ones_count(eroded_ref)
+    graph_def = row_ones_count(eroded_def)
+
+    graph_ref = graph_ref[graph_ref > 0]
+    graph_def = graph_def[graph_def > 0]
+
+    graph_ref_s = smooth_moving(graph_ref, span=5)
+    graph_def_s = smooth_moving(graph_def, span=5)
+
+    n = min(10, len(graph_ref_s) - 1, len(graph_def_s) - 1)
+    if n <= 1:
+        finalcal = 0.0
+    else:
+        dref = np.diff(graph_ref_s[: n + 1])
+        ddef = np.diff(graph_def_s[: n + 1])
+        mref = float(np.mean(dref)) if np.any(np.isfinite(dref)) else 1e-6
+        mdef = float(np.mean(ddef)) if np.any(np.isfinite(ddef)) else 0.0
+        if abs(mref) < 1e-6:
+            mref = 1e-6
+        finalcal = mdef / mref
+
+    st.write(f"Aşınma oranı (göreli değişim): {finalcal:.3f}")
+
+    worn = finalcal > 1.5
+    if worn:
+        st.success("Test iğnesinin **aşınma miktarı yüksek** bulunmuştur.")
+    else:
+        st.info("Test iğnesinin **aşınma miktarı yüksek değildir**.")
+
+    # Nihai özet (buraya gelindiyse kırılma ve eğilme negatiftir)
+    st.markdown("---")
+    st.subheader("Özet")
+    st.write("Kırılma: **Negatif**")
+    st.write("Eğilme:  **Negatif**")
+    st.write(f"Aşınma:  {'**Pozitif**' if worn else '**Negatif**'}")
+
 
 else:
     st.info("Lütfen önce 4 referans ve 4 test görüntüsü yükleyin.")
