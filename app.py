@@ -146,12 +146,12 @@ def preprocess_pipeline(img_rgb: np.ndarray) -> np.ndarray:
 
 # ---------- Yüklemeler ----------
 
-st.subheader("1) Referans Görüntüler (Ref1..Ref4)")
+st.subheader("1) Referans Görüntüler")
 ref_files = st.file_uploader("Ref görüntülerini sırasıyla yükleyin (4 adet)", type=["jpg","jpeg","png"],
                              accept_multiple_files=True, key="refs")
 
 if ref_files and len(ref_files) != 4:
-    st.warning("Lütfen **tam olarak 4** referans görüntü yükleyin (Ref1, Ref2, Ref3, Ref4).")
+    st.warning("Lütfen **tam olarak 4** referans görüntü yükleyin.")
 
 if ref_files and len(ref_files) == 4:
     ref_imgs = [Image.open(f).convert("RGB") for f in ref_files]
@@ -181,7 +181,7 @@ if st.button("Analizi Çalıştır"):
     tst_np = [np.array(im) for im in test_imgs]
 
     # --- KIRILMA (Test #1 ↔ Ref1) ---
-    st.markdown("### ⭐ Kırılma Kontrolü (Test1 ↔ Ref1)")
+    st.markdown("### ⭐ Kırılma Kontrolü")
     defimg = cv2.resize(tst_np[0], (ref_np[0].shape[1], ref_np[0].shape[0]))
     eroded_def = preprocess_pipeline(defimg)
 
@@ -212,7 +212,7 @@ if st.button("Analizi Çalıştır"):
 
     # --- EĞİLME (Test #3 ↔ Ref2) ---
     st.markdown("---")
-    st.markdown("### ⭐ Eğilme Kontrolü (Test3 ↔ Ref2)")
+    st.markdown("### ⭐ Eğilme Kontrolü")
     defimg = cv2.resize(tst_np[2], (ref_np[1].shape[1], ref_np[1].shape[0]))
     eroded_def = preprocess_pipeline(defimg)
 
@@ -240,7 +240,7 @@ if st.button("Analizi Çalıştır"):
 
     # --- AŞINMA (Test #2 ↔ Ref1) ---
     st.markdown("---")
-    st.markdown("### ⭐ Aşınma Kontrolü (Test2 ↔ Ref1)")
+    st.markdown("### ⭐ Aşınma Kontrolü")
     defimg = cv2.resize(tst_np[1], (ref_np[0].shape[1], ref_np[0].shape[0]))
     eroded_def = preprocess_pipeline(defimg)
 
