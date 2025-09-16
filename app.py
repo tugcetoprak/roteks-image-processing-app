@@ -176,7 +176,7 @@ if (ref_files and len(ref_files) == 4) and (test_files and len(test_files) == 4)
         with c:
             c.image(im, caption=f"Test{i}", use_container_width=True)
 
-    if st.button("Analizi Çalıştır"):
+if st.button("Analizi Çalıştır"):
     ref_np = [np.array(im) for im in ref_imgs]
     tst_np = [np.array(im) for im in test_imgs]
 
@@ -273,7 +273,7 @@ if (ref_files and len(ref_files) == 4) and (test_files and len(test_files) == 4)
 
     st.write(f"Aşınma oranı (göreli değişim): {finalcal:.3f}")
 
-    worn = finalcal > 1.5
+    worn = finalcal > 2.0
     if worn:
         st.success("Test iğnesinin **aşınma miktarı yüksek** bulunmuştur.")
     else:
@@ -285,7 +285,6 @@ if (ref_files and len(ref_files) == 4) and (test_files and len(test_files) == 4)
     st.write("Kırılma: **Negatif**")
     st.write("Eğilme:  **Negatif**")
     st.write(f"Aşınma:  {'**Pozitif**' if worn else '**Negatif**'}")
-
 
 else:
     st.info("Lütfen önce 4 referans ve 4 test görüntüsü yükleyin.")
