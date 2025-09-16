@@ -7,13 +7,8 @@ st.set_page_config(page_title="Needle Check (Refs + 4 Tests)", page_icon="🧵")
 st.title("🧵 Needle Deformation Checks (Reference-based)")
 
 st.markdown("""
-Bu uygulama referans görüntüleri (ref1..ref4) ve aynı iğneye ait **4 test görüntüsünü** alır, ardından MATLAB kodundaki
-mantık ile **Kırılma**, **Eğilme** ve **Aşınma** kontrollerini yapar.
-
-**Sıra:**
-- Kırılma: **Test #1**  ↔  **Ref1**
-- Eğilme:  **Test #3**  ↔  **Ref2**
-- Aşınma:  **Test #2**  ↔  **Ref1**
+Bu uygulama referans görüntüleri ve aynı iğneye ait **4 test görüntüsünü** alır, ardından
+**Kırılma**, **Eğilme** ve **Aşınma** kontrollerini yapar.
 """)
 
 # ---------- Yardımcılar ----------
@@ -275,7 +270,7 @@ if (ref_files and len(ref_files) == 4) and (test_files and len(test_files) == 4)
 
         st.write(f"Aşınma miktarı (yüzde değişim oranı benzeri): {finalcal:.3f}")
 
-        worn = int(finalcal > 2.0)
+        worn = int(finalcal > 1.5)
         if worn:
             st.success("Test iğnesinin **aşınma miktarı yüksek** bulunmuştur.")
         else:
